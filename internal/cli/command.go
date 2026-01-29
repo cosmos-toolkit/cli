@@ -39,7 +39,7 @@ func Execute() error {
 		return nil
 	}
 	if args[0] == "version" || args[0] == "--version" || args[0] == "-v" {
-		fmt.Printf("cosmos version %s\n", version)
+		fmt.Printf("%s %s %s\n", cmd("cosmos"), dimmed("version"), accent(version))
 		return nil
 	}
 
@@ -66,79 +66,108 @@ func Execute() error {
 }
 
 func printUsage(w io.Writer) {
-	fmt.Fprintf(w, `Cosmos — Initialize Go projects from templates.
+	fmt.Fprintf(w, `%s  Initialize Go projects from templates.
 
-USAGE:
-  cosmos init [type] <name> [flags]   Create project with built-in template
-  cosmos init <name> --template <n>  Create project with external template
-  cosmos version                    Show version
-  cosmos --help                     Show this help
+%s
+  %s init [type] <name> [flags]   Create project with built-in template
+  %s init <name> %s  Create project with external template
+  %s version                    Show version
+  %s %s                     Show this help
 
-COMMANDS:
+%s
   init    Initialize a new Go project from a template
 
-BUILT-IN TYPES (use with init):
+%s
   api     HTTP service
   worker  Background processing / async jobs
   cli     Command-line tool
 
-EXAMPLES:
-  cosmos init api payments --module github.com/user/payments
-  cosmos init worker jobs --module github.com/user/jobs
-  cosmos init myapp --module github.com/user/myapp --template hexagonal-architecture
+%s
+  %s init api payments %s github.com/user/payments
+  %s init worker jobs %s github.com/user/jobs
+  %s init myapp %s github.com/user/myapp %s hexagonal-architecture
 
-FLAGS (init):
-  --module string    Go module path (required)
-  --template string  External template name (from github.com/cosmos-cli/templates/<name>)
-  --force            Overwrite existing directory
+%s
+  %s string    Go module path (required)
+  %s string  External template name (from github.com/cosmos-cli/templates/<name>)
+  %s            Overwrite existing directory
 
-Run 'cosmos init --help' for init command details.
-`)
+%s
+`,
+		title("Cosmos —"),
+		section("USAGE:"),
+		cmd("cosmos"), cmd("cosmos"), flagStyle("--template <n>"),
+		cmd("cosmos"), cmd("cosmos"), flagStyle("--help"),
+		section("COMMANDS:"),
+		section("BUILT-IN TYPES (use with init):"),
+		section("EXAMPLES:"),
+		cmd("cosmos"), flagStyle("--module"),
+		cmd("cosmos"), flagStyle("--module"),
+		cmd("cosmos"), flagStyle("--module"), flagStyle("--template"),
+		section("FLAGS (init):"),
+		flagStyle("--module"), flagStyle("--template"), flagStyle("--force"),
+		dimmed("Run 'cosmos init --help' for init command details."),
+	)
 }
 
 func printInitUsage(w io.Writer) {
-	fmt.Fprintf(w, `Initialize a new Go project from a template.
+	fmt.Fprintf(w, `%s
 
-USAGE:
-  cosmos init [type] <name> [flags]
-  cosmos init <name> --template <name> [flags]
+%s
+  %s init [type] <name> [flags]
+  %s init <name> %s [flags]
 
   With built-in type (api, worker, cli):
-    cosmos init <type> <project-name> --module <module-path>
+    %s init <type> <project-name> %s
 
   With external template (from GitHub):
-    cosmos init <project-name> --template <template-name> --module <module-path>
+    %s init <project-name> %s %s
 
-ARGUMENTS:
-  type          One of: api, worker, cli (required when not using --template)
+%s
+  type          One of: api, worker, cli (required when not using %s)
   project-name  Name of the project directory to create
   template-name Name of external template (e.g. hexagonal-architecture)
 
-FLAGS:
-  --module string
+%s
+  %s string
       Go module path (required). Example: github.com/user/repo
-  --template string
+  %s string
       External template name. Fetched from github.com/cosmos-cli/templates/<name>
       Cached under ~/.cache/cosmos/templates/
-  --force
+  %s
       Overwrite existing project directory if it exists
 
-EXAMPLES:
-  # API project
-  cosmos init api payments --module github.com/myorg/payments
+%s
+  %s API project
+  %s init api payments %s github.com/myorg/payments
 
-  # Worker project
-  cosmos init worker jobs --module github.com/myorg/jobs
+  %s Worker project
+  %s init worker jobs %s github.com/myorg/jobs
 
-  # CLI tool
-  cosmos init cli toolbox --module github.com/myorg/toolbox
+  %s CLI tool
+  %s init cli toolbox %s github.com/myorg/toolbox
 
-  # External template (e.g. DDD, Hexagonal)
-  cosmos init myapp --module github.com/myorg/myapp --template ddd-architecture
+  %s External template (e.g. DDD, Hexagonal)
+  %s init myapp %s github.com/myorg/myapp %s ddd-architecture
 
-  # Overwrite existing directory
-  cosmos init api payments --module github.com/myorg/payments --force
-`)
+  %s Overwrite existing directory
+  %s init api payments %s github.com/myorg/payments %s
+`,
+		title("Initialize a new Go project from a template."),
+		section("USAGE:"),
+		cmd("cosmos"), cmd("cosmos"), flagStyle("--template <name>"),
+		cmd("cosmos"), flagStyle("--module <module-path>"),
+		cmd("cosmos"), flagStyle("--template <template-name>"), flagStyle("--module <module-path>"),
+		section("ARGUMENTS:"), flagStyle("--template"),
+		section("FLAGS:"),
+		flagStyle("--module"), flagStyle("--template"), flagStyle("--force"),
+		section("EXAMPLES:"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--module"), flagStyle("--template"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--module"), flagStyle("--force"),
+	)
 }
 
 func executeInit(config *Config) error {
@@ -241,7 +270,7 @@ func executeInit(config *Config) error {
 		return fmt.Errorf("failed to render template: %w", err)
 	}
 
-	fmt.Printf("✓ Project %s initialized successfully!\n", config.ProjectName)
+	fmt.Printf("%s Project %s initialized successfully!\n", green+"✓"+reset, accent(config.ProjectName))
 	return nil
 }
 
