@@ -7,8 +7,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/cosmos-toolkit/cosmos-cli/internal/catalog"
+	"github.com/cosmos-toolkit/cosmos-cli/internal/github"
 	"github.com/cosmos-toolkit/cosmos-cli/internal/loader"
 	"github.com/cosmos-toolkit/cosmos-cli/internal/renderer"
 	"github.com/cosmos-toolkit/cosmos-cli/internal/resolver"
@@ -17,6 +21,21 @@ import (
 )
 
 const version = "0.1.0"
+
+const banner = `
+╭─────────────────────────────────────────────────────────╮
+│                                                         │
+│   ██████╗ ██████╗ ███████╗███╗   ███╗ ██████╗ ███████╗  │
+│  ██╔════╝██╔═══██╗██╔════╝████╗ ████║██╔═══██╗██╔════╝  │
+│  ██║     ██║   ██║███████╗██╔████╔██║██║   ██║███████╗  │
+│  ██║     ██║   ██║╚════██║██║╚██╔╝██║██║   ██║╚════██║  │
+│  ╚██████╗╚██████╔╝███████║██║ ╚═╝ ██║╚██████╔╝███████║  │
+│   ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚══════╝  │
+│                                                         │
+│        Initialize Go projects from templates            │
+│                                                         │
+╰─────────────────────────────────────────────────────────╯
+`
 
 type Config struct {
 	Type        string
@@ -43,17 +62,36 @@ func Execute() error {
 		return nil
 	}
 
-	if args[0] != "init" {
+	switch args[0] {
+	case "list":
+		return executeList(args[1:])
+	case "init":
+		return executeInitCommand(args[1:])
+	default:
 		return fmt.Errorf("unknown command: %s\n\nRun 'cosmos --help' for usage", args[0])
 	}
+}
 
+func executeInitCommand(args []string) error {
 	// cosmos init --help or cosmos init -h
-	if len(args) >= 2 && (args[1] == "--help" || args[1] == "-h") {
+	if len(args) >= 1 && (args[0] == "--help" || args[0] == "-h") {
 		printInitUsage(os.Stdout)
 		return nil
 	}
 
-	config, err := parseInitCommand(args[1:])
+	// cosmos init --list or cosmos init -l
+	if len(args) >= 1 && (args[0] == "--list" || args[0] == "-l") {
+		printTemplateList(os.Stdout)
+		return nil
+	}
+
+	// cosmos init (no args) or cosmos init --interactive/-i -> interactive mode
+	initArgs := args
+	if len(initArgs) == 0 || (len(initArgs) == 1 && (initArgs[0] == "--interactive" || initArgs[0] == "-i")) {
+		return runInteractiveInit()
+	}
+
+	config, err := parseInitCommand(initArgs)
 	if err != nil {
 		if err == flag.ErrHelp {
 			printInitUsage(os.Stdout)
@@ -65,55 +103,112 @@ func Execute() error {
 	return executeInit(config)
 }
 
-func printUsage(w io.Writer) {
-	fmt.Fprintf(w, `%s  Initialize Go projects from templates.
+func executeList(args []string) error {
+	// cosmos list or cosmos list --help
+	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" {
+		printListUsage(os.Stdout)
+		return nil
+	}
 
-%s
-  %s init [type] <name> [flags]   Create project with built-in template
-  %s init <name> %s  Create project with external template
-  %s version                    Show version
-  %s %s                     Show this help
+	switch args[0] {
+	case "templates":
+		return runListTemplates(os.Stdout)
+	case "pkgs", "packages":
+		return runListPackages(os.Stdout)
+	default:
+		return fmt.Errorf("unknown subcommand: %s\n\nRun 'cosmos list --help' for usage", args[0])
+	}
+}
 
-%s
-  init    Initialize a new Go project from a template
+func runListTemplates(w io.Writer) error {
+	printBanner(w)
+	fmt.Fprintf(w, "%s\n\n", title("Available templates"))
+	fmt.Fprintf(w, "%s\n", dimmed("github.com/cosmos-toolkit/templates"))
+	fmt.Fprintf(w, "\n")
 
-%s
-  api     HTTP service
-  worker  Background processing / async jobs
-  cli     Command-line tool
+	items, err := github.ListTemplates()
+	if err != nil {
+		return fmt.Errorf("failed to list templates: %w", err)
+	}
+	sort.Strings(items)
+	for _, name := range items {
+		fmt.Fprintf(w, "  %s\n", accent(name))
+	}
+	fmt.Fprintln(w)
+	return nil
+}
 
-%s
-  %s init api payments %s github.com/user/payments
-  %s init worker jobs %s github.com/user/jobs
-  %s init myapp %s github.com/user/myapp %s hexagonal-architecture
+func runListPackages(w io.Writer) error {
+	printBanner(w)
+	fmt.Fprintf(w, "%s\n\n", title("Available packages"))
+	fmt.Fprintf(w, "%s\n", dimmed("github.com/cosmos-toolkit/packages"))
+	fmt.Fprintf(w, "\n")
 
-%s
-  %s string    Go module path (required)
-  %s string  External template name (from github.com/cosmos-cli/templates/<name>)
-  %s            Overwrite existing directory
+	items, err := github.ListPackages()
+	if err != nil {
+		return fmt.Errorf("failed to list packages: %w", err)
+	}
+	sort.Strings(items)
+	if len(items) == 0 {
+		fmt.Fprintf(w, "  %s\n", dimmed("(no packages yet)"))
+	} else {
+		for _, name := range items {
+			fmt.Fprintf(w, "  %s\n", accent(name))
+		}
+	}
+	fmt.Fprintln(w)
+	return nil
+}
 
-%s
+func printListUsage(w io.Writer) {
+	printBanner(w)
+	fmt.Fprintf(w, `%s
+
+  %s list %s      List available templates (from github.com/cosmos-toolkit/templates)
+  %s list %s      List available packages (from github.com/cosmos-toolkit/packages)
+
 `,
-		title("Cosmos —"),
+		title("List templates and packages."),
+		cmd("cosmos"), accent("templates"),
+		cmd("cosmos"), accent("pkgs"),
+	)
+}
+
+func printBanner(w io.Writer) {
+	lines := strings.Split(strings.TrimSpace(banner), "\n")
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	fmt.Fprintln(w)
+}
+
+func printUsage(w io.Writer) {
+	printBanner(w)
+	fmt.Fprintf(w, `%s
+
+  %s init              Start a new project (interactive)
+  %s list %s     List available templates
+  %s list %s     List available packages
+
+  %s %s, %s    Show this help
+  %s %s, %s    Show version
+
+`,
 		section("USAGE:"),
-		cmd("cosmos"), cmd("cosmos"), flagStyle("--template <n>"),
-		cmd("cosmos"), cmd("cosmos"), flagStyle("--help"),
-		section("COMMANDS:"),
-		section("BUILT-IN TYPES (use with init):"),
-		section("EXAMPLES:"),
-		cmd("cosmos"), flagStyle("--module"),
-		cmd("cosmos"), flagStyle("--module"),
-		cmd("cosmos"), flagStyle("--module"), flagStyle("--template"),
-		section("FLAGS (init):"),
-		flagStyle("--module"), flagStyle("--template"), flagStyle("--force"),
-		dimmed("Run 'cosmos init --help' for init command details."),
+		cmd("cosmos"),
+		cmd("cosmos"), accent("templates"),
+		cmd("cosmos"), accent("pkgs"),
+		cmd("cosmos"), flagStyle("--help"), flagStyle("-h"),
+		cmd("cosmos"), flagStyle("--version"), flagStyle("-v"),
 	)
 }
 
 func printInitUsage(w io.Writer) {
+	printBanner(w)
 	fmt.Fprintf(w, `%s
 
 %s
+  %s init                        Interactive setup (project name, template, module)
   %s init [type] <name> [flags]
   %s init <name> %s [flags]
 
@@ -132,12 +227,17 @@ func printInitUsage(w io.Writer) {
   %s string
       Go module path (required). Example: github.com/user/repo
   %s string
-      External template name. Fetched from github.com/cosmos-cli/templates/<name>
+      External template name. Fetched from github.com/cosmos-toolkit/templates/<name>
       Cached under ~/.cache/cosmos/templates/
   %s
       Overwrite existing project directory if it exists
+  %s, %s
+      List available built-in and external templates
 
 %s
+  %s List available templates
+  %s init %s
+
   %s API project
   %s init api payments %s github.com/myorg/payments
 
@@ -155,19 +255,180 @@ func printInitUsage(w io.Writer) {
 `,
 		title("Initialize a new Go project from a template."),
 		section("USAGE:"),
-		cmd("cosmos"), cmd("cosmos"), flagStyle("--template <name>"),
+		cmd("cosmos"), cmd("cosmos"),
+		cmd("cosmos"), flagStyle("--template <name>"),
 		cmd("cosmos"), flagStyle("--module <module-path>"),
 		cmd("cosmos"), flagStyle("--template <template-name>"), flagStyle("--module <module-path>"),
 		section("ARGUMENTS:"), flagStyle("--template"),
 		section("FLAGS:"),
 		flagStyle("--module"), flagStyle("--template"), flagStyle("--force"),
+		flagStyle("--list"), flagStyle("-l"),
 		section("EXAMPLES:"),
+		dimmed("#"), cmd("cosmos"), flagStyle("--list"),
 		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
 		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
 		dimmed("#"), cmd("cosmos"), flagStyle("--module"),
 		dimmed("#"), cmd("cosmos"), flagStyle("--module"), flagStyle("--template"),
 		dimmed("#"), cmd("cosmos"), flagStyle("--module"), flagStyle("--force"),
 	)
+}
+
+var builtInDescriptions = map[string]string{
+	"api":    "HTTP service with handlers and server",
+	"worker": "Background processing / async jobs",
+	"cli":    "Command-line tool with subcommands",
+}
+
+var externalTemplates = []struct {
+	name string
+	desc string
+}{
+	{"api-clean-arch", "template for api with clean architecture"},
+	{"api-grpc", "template for api with grpc"},
+	{"api-hexagonal", "template for api with hexagonal architecture"},
+	{"cli", "template for command line tool"},
+	{"monorepo-starter", "template for monorepo with multiple services"},
+	{"worker-cron", "template worker for cron jobs"},
+	{"worker-queue", "template worker for queue jobs"},
+}
+
+func printTemplateList(w io.Writer) {
+	printBanner(w)
+	cat := catalog.New()
+	templates := cat.ListTemplates()
+
+	fmt.Fprintf(w, "%s\n\n", title("Available templates"))
+	fmt.Fprintf(w, "%s\n", section("Built-in templates (use directly):"))
+	fmt.Fprintf(w, "\n")
+	for _, t := range templates {
+		desc := builtInDescriptions[t.Type]
+		if desc == "" {
+			desc = "Go project template"
+		}
+		fmt.Fprintf(w, "  %s  %s\n", accent(t.Type), dimmed(desc))
+		if len(t.Features) > 0 {
+			fmt.Fprintf(w, "      features: %s\n", dimmed(strings.Join(t.Features, ", ")))
+		}
+		fmt.Fprintf(w, "      %s init %s <name> %s\n\n", cmd("cosmos"), t.Type, flagStyle("--module <path>"))
+	}
+
+	fmt.Fprintf(w, "%s\n", section("External templates (from GitHub):"))
+	fmt.Fprintf(w, "\n")
+	for _, t := range externalTemplates {
+		fmt.Fprintf(w, "  %s  %s\n", accent(t.name), dimmed(t.desc))
+		fmt.Fprintf(w, "      %s init <name> %s %s\n\n", cmd("cosmos"), flagStyle("--template "+t.name), flagStyle("--module <path>"))
+	}
+	fmt.Fprintf(w, "  Use %s to fetch templates from:\n  %s\n\n", flagStyle("--template <name>"), dimmed("github.com/cosmos-toolkit/templates/<name>"))
+	fmt.Fprintf(w, "%s\n", dimmed("Run 'cosmos init --help' for more details."))
+}
+
+func runInteractiveInit() error {
+	printBanner(os.Stdout)
+	fmt.Println(title("Let's create a new Go project"))
+	fmt.Println()
+
+	var projectName string
+	if err := survey.AskOne(
+		&survey.Input{
+			Message: "Project name:",
+			Help:    "This will be the directory name for your project",
+		},
+		&projectName,
+		survey.WithValidator(survey.Required),
+		survey.WithValidator(func(ans interface{}) error {
+			s := ans.(string)
+			return rules.ValidateProjectName(s)
+		}),
+	); err != nil {
+		return err
+	}
+
+	// Build template options: built-in + external
+	templateOpts := make([]string, 0, 3+len(externalTemplates))
+	for _, t := range []struct {
+		name string
+		desc string
+	}{
+		{"api", builtInDescriptions["api"]},
+		{"worker", builtInDescriptions["worker"]},
+		{"cli", builtInDescriptions["cli"]},
+	} {
+		templateOpts = append(templateOpts, fmt.Sprintf("%s - %s (built-in)", t.name, t.desc))
+	}
+	for _, t := range externalTemplates {
+		templateOpts = append(templateOpts, fmt.Sprintf("%s - %s (external)", t.name, t.desc))
+	}
+
+	var selectedTemplate string
+	if err := survey.AskOne(
+		&survey.Select{
+			Message: "Choose a template:",
+			Options: templateOpts,
+		},
+		&selectedTemplate,
+	); err != nil {
+		return err
+	}
+
+	// Parse selection: "name - description (built-in)" or "name - description (external)"
+	parts := strings.SplitN(selectedTemplate, " - ", 2)
+	templateID := strings.TrimSpace(parts[0])
+	isExternal := strings.Contains(selectedTemplate, "(external)")
+
+	var modulePath string
+	user := os.Getenv("USER")
+	if user == "" {
+		user = os.Getenv("USERNAME")
+	}
+	if user == "" {
+		user = "user"
+	}
+	defaultModule := fmt.Sprintf("github.com/%s/%s", user, projectName)
+	if err := survey.AskOne(
+		&survey.Input{
+			Message: "Module path:",
+			Help:    "Go module path (e.g. github.com/user/repo)",
+			Default: defaultModule,
+		},
+		&modulePath,
+		survey.WithValidator(survey.Required),
+		survey.WithValidator(func(ans interface{}) error {
+			s := ans.(string)
+			return rules.ValidateModulePath(s)
+		}),
+	); err != nil {
+		return err
+	}
+
+	config := &Config{
+		ProjectName: projectName,
+		Module:      modulePath,
+	}
+	if isExternal {
+		config.Template = templateID
+	} else {
+		config.Type = templateID
+	}
+
+	// Confirm overwrite if directory exists
+	if writer.DirectoryExists(projectName) {
+		var overwrite bool
+		if err := survey.AskOne(
+			&survey.Confirm{
+				Message: fmt.Sprintf("Directory %q already exists. Overwrite?", projectName),
+				Default: false,
+			},
+			&overwrite,
+		); err != nil {
+			return err
+		}
+		if !overwrite {
+			return fmt.Errorf("cancelled: directory %s already exists", projectName)
+		}
+		config.Force = true
+	}
+
+	return executeInit(config)
 }
 
 func executeInit(config *Config) error {
@@ -249,10 +510,16 @@ func executeInit(config *Config) error {
 		goVersion = "1.23"
 	}
 
+	modulePlaceholder := template.Files.ModulePlaceholder
+	if modulePlaceholder == "" && config.Template != "" {
+		modulePlaceholder = "github.com/your-org/your-app"
+	}
+
 	ctx := renderer.Context{
-		ProjectName: config.ProjectName,
-		Module:      config.Module,
-		GoVersion:   goVersion,
+		ProjectName:       config.ProjectName,
+		Module:            config.Module,
+		GoVersion:         goVersion,
+		ModulePlaceholder: modulePlaceholder,
 	}
 
 	// Create output directory

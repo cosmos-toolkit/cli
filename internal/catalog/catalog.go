@@ -2,6 +2,9 @@ package catalog
 
 import (
 	"io/fs"
+	"sort"
+
+	"github.com/cosmos-toolkit/cosmos-cli/internal/loader"
 )
 
 // templatesFS is set by embed.go init function
@@ -52,4 +55,32 @@ func (c *Catalog) ListEmbeddedTypes() []string {
 		types = append(types, t)
 	}
 	return types
+}
+
+// TemplateInfo holds metadata for display in lists.
+type TemplateInfo struct {
+	Type     string
+	Name     string
+	Version  string
+	Features []string
+}
+
+// ListTemplates returns all embedded templates with metadata for listing/discovery.
+func (c *Catalog) ListTemplates() []TemplateInfo {
+	infos := make([]TemplateInfo, 0, len(c.templates))
+	for templateType, templateFS := range c.templates {
+		tmpl, err := loader.LoadFromFS(templateFS)
+		if err != nil {
+			infos = append(infos, TemplateInfo{Type: templateType, Name: templateType})
+			continue
+		}
+		infos = append(infos, TemplateInfo{
+			Type:     templateType,
+			Name:     tmpl.Name,
+			Version:  tmpl.Version,
+			Features: tmpl.Features,
+		})
+	}
+	sort.Slice(infos, func(i, j int) bool { return infos[i].Type < infos[j].Type })
+	return infos
 }

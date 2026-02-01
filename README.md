@@ -89,7 +89,7 @@ cosmos init cli toolbox --module github.com/your-org/toolbox
 
 ### External templates (GitHub)
 
-Initialize a project with an external template by name. Templates are fetched from `github.com/cosmos-cli/templates/<name>` and cached under `~/.cache/cosmos/templates/`:
+Initialize a project with an external template by name. Templates are fetched from the `github.com/cosmos-toolkit/templates` monorepo using Git sparse checkout (only the chosen folder is downloaded) and cached under `~/.cache/cosmos/templates/`:
 
 ```bash
 cosmos init myapp --module github.com/your-org/myapp --template hexagonal-architecture
@@ -209,7 +209,7 @@ cosmos init api payments --module github.com/you/payments --force
 
 ### 5. Test external template (opcional)
 
-Requer rede e o repositório `github.com/cosmos-cli/templates/<nome>` existir:
+Requer rede e o repositório `github.com/cosmos-toolkit/templates/<nome>` existir:
 
 ```bash
 cosmos init myapp --module github.com/you/myapp --template hexagonal-architecture

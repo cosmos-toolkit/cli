@@ -26,7 +26,8 @@ type Prompt struct {
 }
 
 type FileConfig struct {
-	Engine string `yaml:"engine"`
+	Engine            string `yaml:"engine"`
+	ModulePlaceholder string `yaml:"modulePlaceholder"` // e.g. "github.com/your-org/your-app" - replaced with user's module in all text files
 }
 
 func LoadFromFS(fsys fs.FS) (*Template, error) {

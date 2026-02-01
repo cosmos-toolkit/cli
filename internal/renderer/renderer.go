@@ -11,9 +11,10 @@ import (
 )
 
 type Context struct {
-	ProjectName string
-	Module      string
-	GoVersion   string
+	ProjectName       string
+	Module            string
+	GoVersion         string
+	ModulePlaceholder string // e.g. "github.com/your-org/your-app" - replaced in non-.tmpl text files (external templates)
 }
 
 func Render(fsys fs.FS, ctx Context, outputDir string) error {
@@ -46,7 +47,11 @@ func Render(fsys fs.FS, ctx Context, outputDir string) error {
 			return renderTemplate(data, outputPath, ctx)
 		}
 
-		// Regular file - copy as-is
+		// For external templates: replace module placeholder in text files
+		if ctx.ModulePlaceholder != "" && isTextFile(path) {
+			data = []byte(strings.ReplaceAll(string(data), ctx.ModulePlaceholder, ctx.Module))
+		}
+
 		return writer.WriteFile(outputPath, data)
 	})
 }
@@ -67,6 +72,15 @@ func resolvePath(path string, ctx Context) string {
 	result := strings.TrimSuffix(buf.String(), ".tmpl")
 
 	return result
+}
+
+func isTextFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".go", ".mod", ".yaml", ".yml", ".json", ".toml", ".md", ".txt", ".env", ".gitignore":
+		return true
+	}
+	return false
 }
 
 func renderTemplate(data []byte, outputPath string, ctx Context) error {
