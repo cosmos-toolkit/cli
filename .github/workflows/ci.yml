@@ -50,6 +50,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tag_check.outputs.exists == 'false'
         run: make release VERSION=${{ steps.version.outputs.VERSION }}
 
+      - name: List release artifacts (verify before upload)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tag_check.outputs.exists == 'false'
+        run: ls -la release/
+
       - name: Create tag and push
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tag_check.outputs.exists == 'false'
         run: |
@@ -63,7 +67,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.VERSION }}
-          files: release/*
+          files: |
+            release/*.tar.gz
+            release/*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

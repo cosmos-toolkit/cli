@@ -5,7 +5,7 @@ export PATH := /opt/homebrew/bin:/usr/local/go/bin:/usr/local/bin:$(PATH)
 
 BINARY_NAME := cosmos
 BUILD_DIR := bin
-RELEASE_DIR := releases
+RELEASE_DIR := release
 MAIN_PATH := ./cmd/cosmos
 # Full module path for "install like Docker" (go install from anywhere)
 INSTALL_PATH := github.com/cosmos-toolkit/cli/cmd/cosmos

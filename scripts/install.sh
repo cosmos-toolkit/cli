@@ -43,6 +43,20 @@ fi
 
 if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
   echo "No pre-built binary for ${OS}/${ARCH}. See https://github.com/${REPO}/releases"
+  if [ -n "${DEBUG:-}" ]; then
+    echo ""
+    echo "DEBUG: API=$API"
+    echo "DEBUG: looking for asset name ending with: $SUFFIX"
+    _json=$(curl -sSL "$API")
+    if echo "$_json" | jq -e '.message' >/dev/null 2>&1; then
+      echo "DEBUG: API response: $(echo "$_json" | jq -r '.message')"
+    else
+      _tag=$(echo "$_json" | jq -r '.tag_name // "none"')
+      _assets=$(echo "$_json" | jq -r '(.assets // [])[] | .name' 2>/dev/null | tr '\n' ' ')
+      echo "DEBUG: latest release tag: $_tag"
+      echo "DEBUG: assets: ${_assets:-none}"
+    fi
+  fi
   exit 1
 fi
 
