@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/cosmos-toolkit/cosmos-cli/internal/writer"
+	"github.com/cosmos-toolkit/cli/internal/writer"
 )
 
 type Context struct {

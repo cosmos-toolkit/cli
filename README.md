@@ -103,12 +103,12 @@ Install Cosmos using the install script. The script runs all validations (OS, ar
 **Linux / macOS:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/cosmos-toolkit/cosmos-cli/main/scripts/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/cosmos-toolkit/cli/main/scripts/install.sh | sh
 ```
 
-The script downloads the matching binary from [GitHub Releases](https://github.com/cosmos-toolkit/cosmos-cli/releases) and installs it to `~/.local/bin` or `/usr/local/bin`. If the directory is not in your `PATH`, the script will tell you what to add (e.g. `export PATH="$HOME/.local/bin:$PATH"` in `~/.zshrc` or `~/.bashrc`).
+The script downloads the matching binary from [GitHub Releases](https://github.com/cosmos-toolkit/cli/releases) and installs it to `~/.local/bin` or `/usr/local/bin`. If the directory is not in your `PATH`, the script will tell you what to add (e.g. `export PATH="$HOME/.local/bin:$PATH"` in `~/.zshrc` or `~/.bashrc`).
 
-**Windows:** the script does not support Windows; download the `.zip` for your architecture from [Releases](https://github.com/cosmos-toolkit/cosmos-cli/releases), extract `cosmos.exe`, and add it to your `PATH`.
+**Windows:** the script does not support Windows; download the `.zip` for your architecture from [Releases](https://github.com/cosmos-toolkit/cli/releases), extract `cosmos.exe`, and add it to your `PATH`.
 
 ---
 
@@ -128,7 +128,7 @@ make build
 
 ```bash
 mkdir -p /tmp/cosmos-test && cd /tmp/cosmos-test
-../path/to/cosmos-cli/bin/cosmos init
+../path/to/cli/bin/cosmos init
 # Choose template (built-in or external), enter project name and module path
 ls <project-name>/
 cd <project-name> && go build ./...

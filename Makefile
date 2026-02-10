@@ -8,7 +8,7 @@ BUILD_DIR := bin
 RELEASE_DIR := release
 MAIN_PATH := ./cmd/cosmos
 # Full module path for "install like Docker" (go install from anywhere)
-INSTALL_PATH := github.com/cosmos-toolkit/cosmos-cli/cmd/cosmos
+INSTALL_PATH := github.com/cosmos-toolkit/cli/cmd/cosmos
 
 # Version for release tarballs (set via: make release VERSION=1.0.0)
 VERSION ?= dev

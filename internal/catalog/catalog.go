@@ -4,7 +4,7 @@ import (
 	"io/fs"
 	"sort"
 
-	"github.com/cosmos-toolkit/cosmos-cli/internal/loader"
+	"github.com/cosmos-toolkit/cli/internal/loader"
 )
 
 // templatesFS is set by embed.go init function

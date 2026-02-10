@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cosmos-toolkit/cosmos-cli/internal/catalog"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/cli"
+	"github.com/cosmos-toolkit/cli/internal/catalog"
+	"github.com/cosmos-toolkit/cli/internal/cli"
 )
 
 func main() {

@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 # Install cosmos from GitHub Releases (no Go required).
-# Usage: curl -sSL https://raw.githubusercontent.com/cosmos-toolkit/cosmos-cli/main/scripts/install.sh | sh
+# Usage: curl -sSL https://raw.githubusercontent.com/cosmos-toolkit/cli/main/scripts/install.sh | sh
 
 set -e
 
-REPO="cosmos-toolkit/cosmos-cli"
+REPO="cosmos-toolkit/cli"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 BINARY="cosmos"
 

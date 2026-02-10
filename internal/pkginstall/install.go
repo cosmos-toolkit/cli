@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cosmos-toolkit/cosmos-cli/internal/github"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/resolver"
+	"github.com/cosmos-toolkit/cli/internal/github"
+	"github.com/cosmos-toolkit/cli/internal/resolver"
 	"gopkg.in/yaml.v3"
 )
 

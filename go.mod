@@ -1,4 +1,4 @@
-module github.com/cosmos-toolkit/cosmos-cli
+module github.com/cosmos-toolkit/cli
 
 go 1.23
 

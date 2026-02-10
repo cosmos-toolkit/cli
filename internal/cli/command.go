@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/catalog"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/github"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/loader"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/pkginstall"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/renderer"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/resolver"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/rules"
-	"github.com/cosmos-toolkit/cosmos-cli/internal/writer"
+	"github.com/cosmos-toolkit/cli/internal/catalog"
+	"github.com/cosmos-toolkit/cli/internal/github"
+	"github.com/cosmos-toolkit/cli/internal/loader"
+	"github.com/cosmos-toolkit/cli/internal/pkginstall"
+	"github.com/cosmos-toolkit/cli/internal/renderer"
+	"github.com/cosmos-toolkit/cli/internal/resolver"
+	"github.com/cosmos-toolkit/cli/internal/rules"
+	"github.com/cosmos-toolkit/cli/internal/writer"
 	"github.com/olekukonko/tablewriter"
 )
 
